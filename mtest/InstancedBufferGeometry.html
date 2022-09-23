@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>InstancedBufferGeometry</title>
+	<script src="../build/three.js"></script>
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+		}
+	</style>
+</head>
+
+<body>
+
+	<script id="vshader" type="x-shader/x-vertex">
+		precision highp float;
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+
+		attribute vec3 position;
+		attribute vec3 translate;
+
+		void main() {
+			// 这里不使用translate，不会显示任何东西的
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( position + translate, 1.0 );
+
+		}
+	</script>
+	<script id="fshader" type="x-shader/x-fragment">
+		precision highp float;
+
+		void main() {
+			gl_FragColor = vec4( 1.0, 1.0, 0.0, 1.0 );
+		}
+	</script>
+	<div id="container">
+	</div>
+	<script type="text/javascript">
+		const instances = 5;
+		let camera, scene, renderer, mesh;
+		init()
+		animate()
+		function init() {
+			container = document.getElementById( 'container' );
+			scene = new THREE.Scene();
+			scene.background = new THREE.Color( 0x101010 );
+			camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+			camera.position.z = 10
+			renderer = new THREE.WebGLRenderer();
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			container.appendChild( renderer.domElement );
+
+  		let boxGeometry = new THREE.BoxGeometry(1, 1, 1)
+
+			let geometry = new THREE.InstancedBufferGeometry();
+			// 每一个实例共用的
+			geometry.index = boxGeometry.index // Uint32BufferAttribute 或 Uint16BufferAttribute
+			geometry.attributes = boxGeometry.attributes // Float32BufferAttribute 
+
+			// const circleGeometry = new THREE.CircleGeometry( 1, 6 );
+
+			// geometry = new THREE.InstancedBufferGeometry();
+			// geometry.index = circleGeometry.index;
+			// geometry.attributes = circleGeometry.attributes;
+
+
+			// 不同的实例使用部分数据
+			const translateArray = new Float32Array( instances * 3 );
+      
+			for ( let i = 0, i3 = 0, l = instances; i < l; i ++, i3 += 3 ) {
+
+				translateArray[ i3 + 0 ] = Math.round(Math.random() * 2)
+				translateArray[ i3 + 1 ] = Math.round(Math.random() * 2)
+				translateArray[ i3 + 2 ] = Math.round(Math.random() * 2)
+
+			}
+			// InstancedBufferAttribute 构造函数的第二个参数 itemSize 表示每一个实例使用数据量
+			geometry.setAttribute( 'translate', new THREE.InstancedBufferAttribute( translateArray, 3 ) );
+
+			// 如果想用 geometry 和 MeshBasicMaterial 组合，是显示不出来东西的。 猜测是因为 
+			// let material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+
+			let material = new THREE.RawShaderMaterial( {
+				vertexShader: document.getElementById( 'vshader' ).textContent,
+				fragmentShader: document.getElementById( 'fshader' ).textContent,
+				depthTest: true,
+				depthWrite: true
+			} );
+
+  		mesh = new THREE.Mesh(geometry, material)
+			scene.add(mesh)
+		}
+		function animate() {
+			requestAnimationFrame(animate)
+			render()
+		}
+		function render() {
+			renderer.render( scene, camera );
+		}
+	</script>
+</body>
+
+</html>
