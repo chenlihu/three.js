@@ -81,6 +81,13 @@
 			geometry.setAttribute( 'translate', new THREE.InstancedBufferAttribute( translateArray, 3 ) );
 
 			// 如果想用 geometry 和 MeshBasicMaterial 组合，是显示不出来东西的。 猜测是因为 
+			// 此时出不来是因为 _maxInstanceCount 为 undefined
+			// Three源码
+			// (geometry.isInstancedBufferGeometry) {
+			// 	console.log('_maxInstanceCount', geometry.instanceCount, geometry._maxInstanceCount)
+			// 	const instanceCount = Math.min(geometry.instanceCount, geometry._maxInstanceCount);
+			// 	renderer.renderInstances(drawStart, drawCount, instanceCount);
+			// }
 			// let material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
 
 			let material = new THREE.RawShaderMaterial( {
