@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>InstancedBufferGeometry</title>
+	<!-- <script src="../build/three.js"></script> -->
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+		}
+	</style>
+</head>
+
+<body>
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "../build/three.module.js",
+				"three/addons/": "../examples/jsm/"
+			}
+		}
+	</script>
+	<div id="container">
+	</div>
+	<script type="module">
+		import * as THREE from 'three';
+		import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+		const instances = 5;
+		let camera, scene, renderer, obj, material, controls;
+		init()
+		animate()
+		function init() {
+			scene = new THREE.Scene();
+			scene.background = new THREE.Color( 0x101010 );
+			camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+			camera.position.z = 10
+			camera.lookAt(0, 0, 0)
+
+			renderer = new THREE.WebGLRenderer();
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			controls = new TrackballControls( camera, renderer.domElement );
+			controls.rotateSpeed = 8.0;
+			controls.zoomSpeed = 1.2;
+			controls.panSpeed = 0.8;
+
+			let geometry = new THREE.BufferGeometry()
+			geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+				0, 0, 0,
+				1, 0, 0,
+				0, 1, 0,
+				0, 0, 1,
+				1, 0, 1,
+				0, 1, 1
+			]), 3))
+			geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array([
+				0.8, 0.1, 0.1,
+				0.2, 0.2, 0.1,
+				0.1, 0.3, 0.1,
+				0.6, 0.1, 0.1,
+				0.1, 0.8, 0.1,
+				0.2, 0.6, 0.1,
+			]), 3))
+
+			// 右手握拳，弯曲四指方向为三角形连线方向，大拇指指向为FrontEnd
+			// 如果设置了 
+			// 会使用 WebGLIndexedBufferRenderer  drawElements*
+			// 否则 WebGLBufferRenderer  drawArrays*
+			geometry.setIndex([
+				0, 2, 1,
+				3, 4, 5,
+				0, 1, 3,
+				3, 1, 4,
+				1, 2, 4,
+				4, 2, 5,
+				2, 0, 3,
+				3, 5, 2
+			])
+			// material = new THREE.MeshBasicMaterial({
+			// 	vertexColors: true,
+			// 	opacity: 0.2,
+			// 	transparent: true,
+			// 	color: 'yellow',
+			// 	// side: THREE.DoubleSide  // 默认只渲染FrontEnd
+			// })
+  		// obj = new THREE.Mesh(geometry, material)
+
+			material = new THREE.PointsMaterial({ color: 'yellow', size: 10, sizeAttenuation: false  })
+			obj = new THREE.Points(geometry, material)
+			scene.add(obj)
+      
+			material = new THREE.LineBasicMaterial({ color: 'red' })
+			// 使用 _gl.LINE_STRIP   采用上面的index 画了好多重复的线
+			obj = new THREE.Line(geometry, material)
+
+			scene.add(obj)
+
+			let arrow = new THREE.AxesHelper(3)
+			scene.add(arrow)
+		}
+		function animate() {
+			requestAnimationFrame(animate)
+			controls.update();
+			render()
+		}
+		function render() {
+			renderer.render( scene, camera );
+		}
+	</script>
+</body>
+
+</html>
