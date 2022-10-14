@@ -6,11 +6,12 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Document</title>
+	<script src="./pako.js"></script>
 </head>
 
 <body>
 	<script>
-		let view = new Uint8Array(Math.ceil(50 * 1000 * 10000 / 8))
+		let view = new Uint8Array(Math.ceil(1000 * 10000 / 8))
 		function setBit(index) {
 			let nindex = parseInt(index / 8)
 			let b = index % 8
@@ -31,36 +32,51 @@
 			// console.log(view[nindex])
 		}
 		console.time('setBit')
-		for (let i = 0; i < 1000 * 10000; i++) {
-			setBit(i)
+		for (let i = 0; i < 100 * 10000; i++) {
+			let t = parseInt(Math.random() * 1000 * 10000)
+			setBit(t)
 		}
 		console.timeEnd('setBit')
 
-		let data = {}
-		let dataMap = new Map()
+		console.log('source', view)
 
-		console.time('setData')
-		for (let i = 0; i < 1000 * 10000; i++) {
-			data[i] = true
-		}
-		console.timeEnd('setData')
+		console.time('deflate')
+		let a = pako.deflate(new Uint8Array(view.buffer))
+		console.timeEnd('deflate')
+		console.log('deflate', a)
 
-		console.time('setDataMap')
-		for (let i = 0; i < 1000 * 10000; i++) {
-			dataMap.set(i, true)
-		}
-		console.timeEnd('setDataMap')
 
-		console.time('object')
-		let b = Object.keys(data)
-		console.timeEnd('object')
+		console.time('inflate')
+		let b = pako.inflate(a)
+		console.timeEnd('inflate')
+		console.log('inflate', b)
 
-		console.time('dataMap')
-		let c = []
-		for (let i of dataMap.keys()) {
-			c.push(i)
-		}
-		console.timeEnd('dataMap')
+
+		// let data = {}
+		// let dataMap = new Map()
+
+		// console.time('setData')
+		// for (let i = 0; i < 1000 * 10000; i++) {
+		// 	data[i] = true
+		// }
+		// console.timeEnd('setData')
+
+		// console.time('setDataMap')
+		// for (let i = 0; i < 1000 * 10000; i++) {
+		// 	dataMap.set(i, true)
+		// }
+		// console.timeEnd('setDataMap')
+
+		// console.time('object')
+		// let b = Object.keys(data)
+		// console.timeEnd('object')
+
+		// console.time('dataMap')
+		// let c = []
+		// for (let i of dataMap.keys()) {
+		// 	c.push(i)
+		// }
+		// console.timeEnd('dataMap')
 	</script>
 </body>
 
