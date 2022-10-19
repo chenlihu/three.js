@@ -790,12 +790,13 @@ function setValueT2DArrayArray( gl, v, textures ) {
 
 
 // Helper to pick the right setter for a pure (bottom-level) array
-
+// https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
+// 下面常量代表的类型可以访问上面的网址
 function getPureArraySetter( type ) {
 
 	switch ( type ) {
 
-		case 0x1406: return setValueV1fArray; // FLOAT
+		case 0x1406: return setValueV1fArray; // FLOAT  上面的链接一查就知道 0x1406 代表 FLOAT
 		case 0x8b50: return setValueV2fArray; // _VEC2
 		case 0x8b51: return setValueV3fArray; // _VEC3
 		case 0x8b52: return setValueV4fArray; // _VEC4
@@ -1023,6 +1024,12 @@ class WebGLUniforms {
 			const info = gl.getActiveUniform( program, i ),
 				addr = gl.getUniformLocation( program, info.name );
 
+			/**
+			 * 解析info成三个类 放入seq 和 map 中，seq是数组形式，map是键值对形式
+			 * StructuredUniform 内部也有 seq map
+			 * SingleUniform 普通的uniform
+			 * PureArrayUniform 数组形式的uniform
+			 */
 			parseUniform( info, addr, this );
 
 		}
@@ -1046,7 +1053,6 @@ class WebGLUniforms {
 	}
 
 	static upload( gl, seq, values, textures ) {
-
 		for ( let i = 0, n = seq.length; i !== n; ++ i ) {
 
 			const u = seq[ i ],
