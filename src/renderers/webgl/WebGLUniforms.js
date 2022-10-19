@@ -929,19 +929,51 @@ function parseUniform( activeInfo, addr, container ) {
 		pathLength = path.length;
 
 	// reset RegExp object, because of the early exit of a previous run
+	// 下面的代码是通过break退出的exec，所以lastIndex状态有可能没有被重置
+	// https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
 	RePathPart.lastIndex = 0;
 
 	while ( true ) {
+		/**
+		  /(\w+)(\])?(\[|\.)?/g
+			三个分组
+			1. 匹配字母数字下划线
+			2. 匹配 ]
+			3. 匹配 [或点
 
+			上面可以看出 2 和 3 是可选的，所以匹配成功的形式有如下组合：
+			id
+			id]
+			id][
+			id].
+			id[
+			id.
+			
+			结果分别为：
+			['id', 'id', undefined, undefined, index: 0, input: 'id', groups: undefined]
+			['id]', 'id', ']', undefined, index: 0, input: 'id]', groups: undefined]
+			['id][', 'id', ']', '[', index: 0, input: 'id][', groups: undefined]
+			['id].', 'id', ']', '.', index: 0, input: 'id].', groups: undefined]
+			['id[', 'id', undefined, '[', index: 0, input: 'id[', groups: undefined]
+			['id.', 'id', undefined, '.', index: 0, input: 'id.', groups: undefined]
+
+			可以总结一下：
+			match[1] 始终为id
+			match[2] 为] 结合下面的代码id为数字
+			match[3] 代表了子项的形式是 [ 形式 或者 .形式
+		 */
 		const match = RePathPart.exec( path ),
 			matchEnd = RePathPart.lastIndex;
 
-		let id = match[ 1 ];
+		let id = match[ 1 ]; // 从上面的正则匹配组合可以看出 match[1] 始终是id
+		// 当匹配3]时，match[2] === ']'  那match[1]也就是id一定是数字
 		const idIsIndex = match[ 2 ] === ']',
 			subscript = match[ 3 ];
 
 		if ( idIsIndex ) id = id | 0; // convert to integer
-
+		// 下面是结束循环的两种可能
+    // subscript === undefined 代表没有子项了  代码上面组合中的  id id]
+		// 如果匹配到 id][  id[ 并且+2就等于pathLength
 		if ( subscript === undefined || subscript === '[' && matchEnd + 2 === pathLength ) {
 
 			// bare name or "pure" bottom-level array "[0]" suffix
@@ -952,7 +984,7 @@ function parseUniform( activeInfo, addr, container ) {
 
 			break;
 
-		} else {
+		} else { // 上面的组合中只剩下两个了 id].  id.  匹配到这两种情况，继续下面的行为。
 
 			// step into inner node / create it in case it doesn't exist
 
