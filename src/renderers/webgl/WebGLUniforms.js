@@ -907,10 +907,10 @@ class StructuredUniform {
 
 const RePathPart = /(\w+)(\])?(\[|\.)?/g;
 
-// extracts
-// 	- the identifier (member name or array index)
-//  - followed by an optional right bracket (found when array index)
-//  - followed by an optional left bracket or dot (type of subscript)
+// extracts 取出
+// 	- the identifier (member name or array index)  取出名称或者数组索引
+//  - followed by an optional right bracket (found when array index)  确定标识符是否为数组索引
+//  - followed by an optional left bracket or dot (type of subscript)  确定子项的类型是数组还是非数组
 //
 // Note: These portions can be read in a non-overlapping fashion and
 // allow straightforward parsing of the hierarchy that WebGL encodes
@@ -984,7 +984,8 @@ function parseUniform( activeInfo, addr, container ) {
 
 			break;
 
-		} else { // 上面的组合中只剩下两个了 id].  id.  匹配到这两种情况，继续下面的行为。
+		} else {
+			// 上面的组合中只剩下两个了 id].  id.  匹配到这两种情况，继续下面的行为。
 
 			// step into inner node / create it in case it doesn't exist
 
