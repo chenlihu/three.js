@@ -1036,7 +1036,7 @@ class WebGLUniforms {
 
 	}
 	// 这里虽然传入了一个WebGLTextures实例，因为setValue时要用到它上面的方法
-	// 涉及到texture时，才会用到哈, 所以这一个可选参数
+	// 涉及到sampler uniforms时，才会用到哈, 所以这一个可选参数
 	setValue( gl, name, value, textures ) {
 
 		const u = this.map[ name ];
