@@ -586,11 +586,11 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 		}
 
 	}
-
+	// 主要目的是为texture通过原生方法createTexture() 创建纹理对方存储到 textureProperties.__webglTexture
 	function initTexture( textureProperties, texture ) {
 
 		let forceUpload = false;
-
+		// 表示当前texture是否被初始化过，如果没有则初始化，其实就是支持dispose 
 		if ( textureProperties.__webglInit === undefined ) {
 
 			textureProperties.__webglInit = true;
@@ -600,7 +600,14 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 		}
 
 		// create Source <-> WebGLTextures mapping if necessary
-
+    // _sources 一个WeakMap， key 为每一个texture的source属性
+		// value 的结构是这样的
+		/**
+		 * {
+		 *   texture: WebglTexture,
+		 *   usedTimes: 0   使用次数，当使用次数为0时，表示已经不再使用, 可以删除了
+		 * }
+		 */
 		const source = texture.source;
 		let webglTextures = _sources.get( source );
 
@@ -612,13 +619,14 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 		}
 
 		// check if there is already a WebGLTexture object for the given texture parameters
-
+		// 通过texture的参数生成新的cachekey, textureProperties.__cacheKey 这个旧的
+		// 如果两个相等代表texture参数没有改变过，就不用更新了
 		const textureCacheKey = getTextureCacheKey( texture );
 
 		if ( textureCacheKey !== textureProperties.__cacheKey ) {
 
 			// if not, create a new instance of WebGLTexture
-
+			// 生成新的
 			if ( webglTextures[ textureCacheKey ] === undefined ) {
 
 				// create new entry
@@ -641,7 +649,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 			// every time the texture cache key changes, it's necessary to check if an instance of
 			// WebGLTexture can be deleted in order to avoid a memory leak.
-
+			// 防止内存泄露，删除旧的texture
 			const webglTexture = webglTextures[ textureProperties.__cacheKey ];
 
 			if ( webglTexture !== undefined ) {
@@ -673,10 +681,13 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		if ( texture.isDataArrayTexture ) textureType = _gl.TEXTURE_2D_ARRAY;
 		if ( texture.isData3DTexture ) textureType = _gl.TEXTURE_3D;
-
+    // 主要目的是为texture通过原生方法createTexture() 创建纹理对方存储到 textureProperties.__webglTexture
+		// 简单理解成支持缓存的 createTexture()
 		const forceUpload = initTexture( textureProperties, texture );
 		const source = texture.source;
-
+		/**
+		 * 调用 gl.activeTexture(texture)   gl.bindTexture(target, texture)
+		 */
 		state.bindTexture( textureType, textureProperties.__webglTexture, _gl.TEXTURE0 + slot );
 
 		const sourceProperties = properties.get( source );
