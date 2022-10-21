@@ -12,7 +12,7 @@
 	<canvas id="canvas"></canvas>
 	<script>
 		let canvas = document.getElementById('canvas')
-		let gl = canvas.getContext("webgl2") ||
+		let gl = window.gl = canvas.getContext("webgl2") ||
 			canvas.getContext("webgl") ||
 			canvas.getContext("experimental-webgl");	
 		let MAX_VERTEX_ATTRIBS = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
