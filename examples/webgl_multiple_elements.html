@@ -183,16 +183,21 @@
 
 			}
 
+			// 背景是一个大的canvas，所有的内容都是画到上面的。上层是div组成的描述信息
+			// 滚动滚动条的时候，canvas也会跟着调整位置，使canvas始终处在可视窗口中
 			function render() {
 
 				updateSize();
 
 				canvas.style.transform = `translateY(${window.scrollY}px)`;
 
+				// 一开始这里不太理解，单独看过canvas画布的效果，就好理解了(隐藏掉上层的div)
+				// 他的作用就是清空整个画布为白色
 				renderer.setClearColor( 0xffffff );
 				renderer.setScissorTest( false );
 				renderer.clear();
 
+				// 这个颜色值，会画到每一个viewport上
 				renderer.setClearColor( 0xe0e0e0 );
 				renderer.setScissorTest( true );
 
@@ -209,6 +214,7 @@
 					const rect = element.getBoundingClientRect();
 
 					// check if it's offscreen. If so skip it
+					// 已经出去的，就不更新了
 					if ( rect.bottom < 0 || rect.top > renderer.domElement.clientHeight ||
 						 rect.right < 0 || rect.left > renderer.domElement.clientWidth ) {
 
@@ -221,16 +227,16 @@
 					const height = rect.bottom - rect.top;
 					const left = rect.left;
 					const bottom = renderer.domElement.clientHeight - rect.bottom;
-
+					// viewport scissor 的坐标都是左下角
 					renderer.setViewport( left, bottom, width, height );
 					renderer.setScissor( left, bottom, width, height );
 
 					const camera = scene.userData.camera;
 
-					//camera.aspect = width / height; // not changing in this example
-					//camera.updateProjectionMatrix();
-
-					//scene.userData.controls.update();
+					// new OrbitControls( scene.userData.camera, scene.userData.element );
+					// 上面盖一个div, scene.userData.element就是这个div
+					// 就可以实现单个viewport的控制了
+					scene.userData.controls.update();
 
 					renderer.render( scene, camera );
 
