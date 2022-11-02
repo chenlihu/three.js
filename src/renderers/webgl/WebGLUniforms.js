@@ -790,12 +790,13 @@ function setValueT2DArrayArray( gl, v, textures ) {
 
 
 // Helper to pick the right setter for a pure (bottom-level) array
-
+// https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
+// 下面常量代表的类型可以访问上面的网址
 function getPureArraySetter( type ) {
 
 	switch ( type ) {
 
-		case 0x1406: return setValueV1fArray; // FLOAT
+		case 0x1406: return setValueV1fArray; // FLOAT  上面的链接一查就知道 0x1406 代表 FLOAT
 		case 0x8b50: return setValueV2fArray; // _VEC2
 		case 0x8b51: return setValueV3fArray; // _VEC3
 		case 0x8b52: return setValueV4fArray; // _VEC4
@@ -907,10 +908,10 @@ class StructuredUniform {
 
 const RePathPart = /(\w+)(\])?(\[|\.)?/g;
 
-// extracts
-// 	- the identifier (member name or array index)
-//  - followed by an optional right bracket (found when array index)
-//  - followed by an optional left bracket or dot (type of subscript)
+// extracts 取出
+// 	- the identifier (member name or array index)  取出名称或者数组索引
+//  - followed by an optional right bracket (found when array index)  确定标识符是否为数组索引
+//  - followed by an optional left bracket or dot (type of subscript)  确定子项的类型是数组还是非数组
 //
 // Note: These portions can be read in a non-overlapping fashion and
 // allow straightforward parsing of the hierarchy that WebGL encodes
@@ -929,19 +930,51 @@ function parseUniform( activeInfo, addr, container ) {
 		pathLength = path.length;
 
 	// reset RegExp object, because of the early exit of a previous run
+	// 下面的代码是通过break退出的exec，所以lastIndex状态有可能没有被重置
+	// https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
 	RePathPart.lastIndex = 0;
 
 	while ( true ) {
+		/**
+		  /(\w+)(\])?(\[|\.)?/g
+			三个分组
+			1. 匹配字母数字下划线
+			2. 匹配 ]
+			3. 匹配 [或点
 
+			上面可以看出 2 和 3 是可选的，所以匹配成功的形式有如下组合：
+			id
+			id]
+			id][
+			id].
+			id[
+			id.
+			
+			结果分别为：
+			['id', 'id', undefined, undefined, index: 0, input: 'id', groups: undefined]
+			['id]', 'id', ']', undefined, index: 0, input: 'id]', groups: undefined]
+			['id][', 'id', ']', '[', index: 0, input: 'id][', groups: undefined]
+			['id].', 'id', ']', '.', index: 0, input: 'id].', groups: undefined]
+			['id[', 'id', undefined, '[', index: 0, input: 'id[', groups: undefined]
+			['id.', 'id', undefined, '.', index: 0, input: 'id.', groups: undefined]
+
+			可以总结一下：
+			match[1] 始终为id
+			match[2] 为] 结合下面的代码id为数字
+			match[3] 代表了子项的形式是 [ 形式 或者 .形式
+		 */
 		const match = RePathPart.exec( path ),
 			matchEnd = RePathPart.lastIndex;
 
-		let id = match[ 1 ];
+		let id = match[ 1 ]; // 从上面的正则匹配组合可以看出 match[1] 始终是id
+		// 当匹配3]时，match[2] === ']'  那match[1]也就是id一定是数字
 		const idIsIndex = match[ 2 ] === ']',
 			subscript = match[ 3 ];
 
 		if ( idIsIndex ) id = id | 0; // convert to integer
-
+		// 下面是结束循环的两种可能
+    // subscript === undefined 代表没有子项了  代码上面组合中的  id id]
+		// 如果匹配到 id][  id[ 并且+2就等于pathLength
 		if ( subscript === undefined || subscript === '[' && matchEnd + 2 === pathLength ) {
 
 			// bare name or "pure" bottom-level array "[0]" suffix
@@ -953,6 +986,7 @@ function parseUniform( activeInfo, addr, container ) {
 			break;
 
 		} else {
+			// 上面的组合中只剩下两个了 id].  id.  匹配到这两种情况，继续下面的行为。
 
 			// step into inner node / create it in case it doesn't exist
 
@@ -990,12 +1024,19 @@ class WebGLUniforms {
 			const info = gl.getActiveUniform( program, i ),
 				addr = gl.getUniformLocation( program, info.name );
 
+			/**
+			 * 解析info成三个类 放入seq 和 map 中，seq是数组形式，map是键值对形式
+			 * StructuredUniform 内部也有 seq map
+			 * SingleUniform 普通的uniform
+			 * PureArrayUniform 数组形式的uniform
+			 */
 			parseUniform( info, addr, this );
 
 		}
 
 	}
-
+	// 这里虽然传入了一个WebGLTextures实例，因为setValue时要用到它上面的方法
+	// 涉及到sampler uniforms时，才会用到哈, 所以这一个可选参数
 	setValue( gl, name, value, textures ) {
 
 		const u = this.map[ name ];
@@ -1013,7 +1054,6 @@ class WebGLUniforms {
 	}
 
 	static upload( gl, seq, values, textures ) {
-
 		for ( let i = 0, n = seq.length; i !== n; ++ i ) {
 
 			const u = seq[ i ],
