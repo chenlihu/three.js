@@ -229,6 +229,10 @@
 					const bottom = renderer.domElement.clientHeight - rect.bottom;
 					// viewport scissor 的坐标都是左下角
 					renderer.setViewport( left, bottom, width, height );
+					/*
+						 注释掉 renderer.setScissorTest( true ); 和下面一行，看一下效果，就知道setScissor的作用了。
+						 他的作用就是指定一个可以修改的区域，区域外不允许修改。
+					 */
 					renderer.setScissor( left, bottom, width, height );
 
 					const camera = scene.userData.camera;
