@@ -42,11 +42,9 @@
 	<body>
 
 		<div id="container">
-			<canvas id="canvas1"></canvas>
-			<canvas id="canvas2"></canvas>
-			<canvas id="canvas3"></canvas>
+			
 		</div>
-		<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> webgl - multiple canvases - complex</div>
+		<!-- <div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> webgl - multiple canvases - complex</div> -->
 
 		<!-- Import maps polyfill -->
 		<!-- Remove this when import maps will be widely supported -->
@@ -67,7 +65,10 @@
 
 			const views = [];
 
-			let scene, renderer;
+			let scene, camera, renderer;
+
+			const fullWidth = 550;
+			const fullHeight = 600;
 
 			let mouseX = 0, mouseY = 0;
 
@@ -77,53 +78,7 @@
 			init();
 			animate();
 
-			//
-
-			function View( canvas, fullWidth, fullHeight, viewX, viewY, viewWidth, viewHeight ) {
-
-				canvas.width = viewWidth * window.devicePixelRatio;
-				canvas.height = viewHeight * window.devicePixelRatio;
-
-				const context = canvas.getContext( '2d' );
-
-				const camera = new THREE.PerspectiveCamera( 20, viewWidth / viewHeight, 1, 10000 );
-				// 从视图中选取部分，viewX viewY 为左上角坐标
-				camera.setViewOffset( fullWidth, fullHeight, viewX, viewY, viewWidth, viewHeight );
-				camera.position.z = 1800;
-
-				this.render = function () {
-
-					camera.position.x += ( mouseX - camera.position.x ) * 0.05;
-					camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
-					camera.lookAt( scene.position );
-
-					// 这部分先前一直不理解
-					// 这里y的位置，是为了把图形画到左上角，为drawImage做准备
-					renderer.setViewport( 0, fullHeight - viewHeight, viewWidth, viewHeight );
-					renderer.render( scene, camera );
-
-					context.drawImage( renderer.domElement, 0, 0 );
-
-				};
-
-			}
-
-			//
-
 			function init() {
-
-				const canvas1 = document.getElementById( 'canvas1' );
-				const canvas2 = document.getElementById( 'canvas2' );
-				const canvas3 = document.getElementById( 'canvas3' );
-
-				const fullWidth = 550;
-				const fullHeight = 600;
-
-				views.push( new View( canvas1, fullWidth, fullHeight, 0, 0, canvas1.clientWidth, canvas1.clientHeight ) );
-				views.push( new View( canvas2, fullWidth, fullHeight, 150, 200, canvas2.clientWidth, canvas2.clientHeight ) );
-				views.push( new View( canvas3, fullWidth, fullHeight, 75, 300, canvas3.clientWidth, canvas3.clientHeight ) );
-
-				//
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xffffff );
@@ -132,42 +87,8 @@
 				light.position.set( 0, 0, 1 ).normalize();
 				scene.add( light );
 
-				// shadow  画阴影，本实例只关注 setViewOffset setViewport 这部分忽略
-
-				const canvas = document.createElement( 'canvas' );
-				canvas.width = 128;
-				canvas.height = 128;
-
-				const context = canvas.getContext( '2d' );
-				const gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
-				gradient.addColorStop( 0.1, 'rgba(210,210,210,1)' );
-				gradient.addColorStop( 1, 'rgba(255,255,255,1)' );
-
-				context.fillStyle = gradient;
-				context.fillRect( 0, 0, canvas.width, canvas.height );
-
-				const shadowTexture = new THREE.CanvasTexture( canvas );
-
-				const shadowMaterial = new THREE.MeshBasicMaterial( { map: shadowTexture } );
-				const shadowGeo = new THREE.PlaneGeometry( 300, 300, 1, 1 );
-				let shadowMesh;
-
-				shadowMesh = new THREE.Mesh( shadowGeo, shadowMaterial );
-				shadowMesh.position.y = - 250;
-				shadowMesh.rotation.x = - Math.PI / 2;
-				scene.add( shadowMesh );
-
-				shadowMesh = new THREE.Mesh( shadowGeo, shadowMaterial );
-				shadowMesh.position.x = - 400;
-				shadowMesh.position.y = - 250;
-				shadowMesh.rotation.x = - Math.PI / 2;
-				scene.add( shadowMesh );
-
-				shadowMesh = new THREE.Mesh( shadowGeo, shadowMaterial );
-				shadowMesh.position.x = 400;
-				shadowMesh.position.y = - 250;
-				shadowMesh.rotation.x = - Math.PI / 2;
-				scene.add( shadowMesh );
+				camera = new THREE.PerspectiveCamera( 20, fullWidth / fullHeight, 1, 10000 );
+				camera.position.z = 1800;
 
 				const radius = 200;
 
@@ -231,6 +152,11 @@
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( fullWidth, fullHeight );
 
+				// renderer.domElement.style.position = 'absolute'
+				renderer.domElement.style.border = '1px solid red'
+
+				document.getElementById('container').insertBefore(renderer.domElement, document.getElementById( 'canvas1' ))
+
 				document.addEventListener( 'mousemove', onDocumentMouseMove );
 
 			}
@@ -244,13 +170,16 @@
 
 			function animate() {
 
-				for ( let i = 0; i < views.length; ++ i ) {
+				// 更改这里的参数，理解 setViewOffset  setViewport
+				// https://threejs.org/docs/index.html?q=camer#api/en/cameras/PerspectiveCamera.setViewOffset
+				// 上面的文档给出了一个例子，假如我们把view显示到九个显示器中，就可以用到这个
+				// 这个函数的作用就是选取原view中的一部分，展示到当前viewport中。通过左上角x,y,和width,height来指定。
+				camera.setViewOffset(fullWidth, fullHeight, 0, 0, fullWidth / 2, fullHeight / 2)
+				// 设置视口，左下角x,左下角y,width,height
+				renderer.setViewport(0, 0, fullWidth / 2, fullHeight / 2);
+				renderer.render(scene, camera)
 
-					views[ i ].render();
-
-				}
-
-				requestAnimationFrame( animate );
+				// requestAnimationFrame( animate );
 
 			}
 
